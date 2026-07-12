@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0e1116">
+  <title>MEL 影片存檔轉換器</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <h1>MEL 影片存檔轉換器</h1>
+      <p>上傳影片後，在瀏覽器內逐幀轉換，並產生可匯入遊戲的 <code>.melsave</code>。影片不會上傳到伺服器。</p>
+    </header>
+
+    <section class="card form-grid">
+      <div class="full">
+        <label for="videoFile">影片檔案</label>
+        <input id="videoFile" type="file" accept="video/*,.mp4,.mov,.m4v,.webm">
+      </div>
+
+      <div>
+        <label for="template">存檔模板／解析度</label>
+        <select id="template">
+          <option value="mc-48x27" selected>MC｜48 × 27（推薦）</option>
+          <option value="pool-64x36">Pool｜64 × 36（較清楚）</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="fps">輸出 FPS</label>
+        <select id="fps">
+          <option value="10">10 FPS</option>
+          <option value="15" selected>15 FPS</option>
+          <option value="20">20 FPS</option>
+          <option value="24">24 FPS</option>
+          <option value="30">30 FPS</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="fit">畫面填充</label>
+        <select id="fit">
+          <option value="contain" selected>完整顯示（可能有黑邊）</option>
+          <option value="cover">裁切填滿</option>
+          <option value="stretch">拉伸填滿</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="maxSeconds">最長轉換秒數</label>
+        <input id="maxSeconds" type="number" min="1" max="120" step="1" value="15">
+      </div>
+
+      <div class="full">
+        <label for="saveName">存檔名稱</label>
+        <input id="saveName" type="text" maxlength="50" value="video mp4">
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="preview">
+        <canvas id="preview" width="640" height="360"></canvas>
+        <div id="previewEmpty" class="preview-empty">請先選擇影片</div>
+      </div>
+
+      <div class="timeline">
+        <input id="previewTime" type="range" min="0" max="1" value="0" step="0.001" disabled>
+        <span id="timeText">0:00 / 0:00</span>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><strong id="durationStat">—</strong><span>影片秒數</span></div>
+        <div class="stat"><strong id="framesStat">—</strong><span>輸出影格</span></div>
+        <div class="stat"><strong id="pixelsStat">1,296</strong><span>每幀像素</span></div>
+        <div class="stat"><strong id="charsStat">—</strong><span>預估資料字元</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <button id="convert" type="button" disabled>生成 .melsave</button>
+      <div class="progress"><div id="bar"></div></div>
+      <pre id="status">請先選擇影片。</pre>
+    </section>
+
+    <section class="card notes">
+      <h2>建議設定</h2>
+      <p>先使用 48×27、15 FPS、10～15 秒測試。64×36 每幀有 2,304 個像素，遊戲負擔約是 48×27 的 1.78 倍。</p>
+      <p>iPhone／iPad 請從 GitHub Pages 的 HTTPS 網址開啟，不要直接在「檔案」App 裡開啟 HTML。</p>
+    </section>
+  </main>
+
+  <video id="video" muted playsinline preload="auto"></video>
+  <canvas id="work"></canvas>
+
+  <script src="./vendor/jszip.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
