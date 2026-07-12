@@ -30,7 +30,18 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  function waitForEvent(element, eventName, timeoutMs = 15000) {
+  function mediaErrorMessage() {
+    const code = video.error?.code;
+    const messages = {
+      1: "影片載入被中止",
+      2: "影片讀取失敗",
+      3: "瀏覽器無法解碼這支影片",
+      4: "瀏覽器不支援這個影片格式"
+    };
+    return messages[code] || "影片解析失敗";
+  }
+
+  function waitForEvent(element, eventName, timeoutMs = 20000) {
     return new Promise((resolve, reject) => {
       let timer;
 
@@ -58,17 +69,6 @@
         reject(new Error(`等待 ${eventName} 逾時`));
       }, timeoutMs);
     });
-  }
-
-  function mediaErrorMessage() {
-    const code = video.error?.code;
-    const messages = {
-      1: "影片載入被中止",
-      2: "影片讀取失敗",
-      3: "瀏覽器無法解碼這支影片",
-      4: "瀏覽器不支援這個影片格式"
-    };
-    return messages[code] || "影片解析失敗";
   }
 
   function selectedTemplate() {
@@ -150,25 +150,28 @@
     $("previewEmpty").hidden = true;
   }
 
-  async function seekTo(seconds) {
+  async function seekPreview(seconds) {
     const target = Math.min(
       Math.max(0, seconds),
       Math.max(0, video.duration - 0.001)
     );
 
-    if (Math.abs(video.currentTime - target) < 0.0005 && video.readyState >= 2) {
+    if (Math.abs(video.currentTime - target) < 0.02 && video.readyState >= 2) {
+      renderPreview();
       return;
     }
 
-    const seeked = waitForEvent(video, "seeked", 15000);
-    video.currentTime = target;
-    await seeked;
-
-    if ("requestVideoFrameCallback" in video) {
-      await new Promise((resolve) => video.requestVideoFrameCallback(() => resolve()));
-    } else {
-      await sleep(30);
+    try {
+      const promise = waitForEvent(video, "seeked", 8000);
+      video.currentTime = target;
+      await promise;
+    } catch (_) {
+      // Safari 偶爾漏掉 seeked；預覽時允許退化成短暫等待。
+      video.currentTime = target;
+      await sleep(300);
     }
+
+    renderPreview();
   }
 
   async function loadVideo(file) {
@@ -194,16 +197,16 @@
       throw new Error("無法取得影片長度");
     }
 
-    // Safari 有時需要短暫播放，才能解出第一張畫面。
+    video.muted = true;
+    video.playsInline = true;
+
     try {
       await video.play();
-      await sleep(80);
+      await sleep(100);
       video.pause();
-    } catch (_) {
-      // 使用者已透過檔案選擇觸發操作，通常可播放；失敗時仍繼續嘗試 seek。
-    }
+    } catch (_) {}
 
-    await seekTo(0);
+    await seekPreview(0);
 
     $("previewTime").disabled = false;
     $("previewTime").value = "0";
@@ -300,6 +303,174 @@ end`;
     return r + b * 16 + g * 256;
   }
 
+  function encodeCurrentFrame(context, config, palette) {
+    drawVideoFrame(context, config.width, config.height, config.fit);
+    const rgba = context.getImageData(
+      0, 0, config.width, config.height
+    ).data;
+
+    const chars = new Array(config.pixelCount);
+
+    for (let source = 0, pixel = 0; source < rgba.length; source += 4, pixel++) {
+      chars[pixel] = palette[
+        rgbToPaletteIndex(rgba[source], rgba[source + 1], rgba[source + 2])
+      ];
+    }
+
+    return chars.join("");
+  }
+
+  async function captureFramesContinuously(context, config, palette) {
+    const frameChunks = new Array(config.frameCount);
+    let captured = 0;
+    let nextCaptureTime = 0;
+    let lastMediaTime = -1;
+    let rafId = null;
+    let callbackId = null;
+    let finished = false;
+
+    const oldRate = video.playbackRate;
+    video.playbackRate = 1;
+    video.pause();
+
+    // 只在開始時跳回一次，不再每一幀 seek。
+    try {
+      if (Math.abs(video.currentTime) > 0.05) {
+        const seekPromise = waitForEvent(video, "seeked", 10000);
+        video.currentTime = 0;
+        await seekPromise;
+      } else {
+        video.currentTime = 0;
+      }
+    } catch (_) {
+      video.currentTime = 0;
+      await sleep(400);
+    }
+
+    function captureAt(mediaTime) {
+      if (finished || captured >= config.frameCount) return;
+
+      while (
+        captured < config.frameCount &&
+        mediaTime + 0.0005 >= nextCaptureTime
+      ) {
+        frameChunks[captured] = encodeCurrentFrame(context, config, palette);
+        captured += 1;
+        nextCaptureTime = captured / config.fps;
+
+        const percent = (captured / config.frameCount) * 84;
+        $("bar").style.width = `${percent.toFixed(1)}%`;
+        status.textContent =
+          `正在連續播放並擷取影格 ${captured} / ${config.frameCount}\n` +
+          `影片時間 ${formatTime(mediaTime)} / ${formatTime(config.usedSeconds)}`;
+      }
+    }
+
+    return new Promise(async (resolve, reject) => {
+      let watchdog;
+
+      const cleanup = () => {
+        finished = true;
+        clearTimeout(watchdog);
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        if (
+          callbackId !== null &&
+          "cancelVideoFrameCallback" in video
+        ) {
+          video.cancelVideoFrameCallback(callbackId);
+        }
+        video.pause();
+        video.playbackRate = oldRate;
+      };
+
+      const finish = () => {
+        cleanup();
+
+        // 某些低影格率影片可能沒有剛好走到最後採樣點；
+        // 以最後一張可用畫面補齊剩餘輸出幀。
+        if (captured === 0) {
+          reject(new Error("沒有成功擷取任何影片畫面"));
+          return;
+        }
+
+        while (captured < config.frameCount) {
+          frameChunks[captured] = frameChunks[captured - 1];
+          captured += 1;
+        }
+
+        resolve(frameChunks);
+      };
+
+      const fail = (error) => {
+        cleanup();
+        reject(error);
+      };
+
+      watchdog = setTimeout(() => {
+        fail(new Error("影片連續解碼逾時，請保持 Safari 在前景並關閉省電模式"));
+      }, Math.max(30000, config.usedSeconds * 5000));
+
+      const onEnded = () => finish();
+      video.addEventListener("ended", onEnded, { once: true });
+
+      if ("requestVideoFrameCallback" in video) {
+        const onFrame = (_now, metadata) => {
+          if (finished) return;
+
+          const mediaTime = Number.isFinite(metadata.mediaTime)
+            ? metadata.mediaTime
+            : video.currentTime;
+
+          if (mediaTime >= lastMediaTime) {
+            lastMediaTime = mediaTime;
+            captureAt(mediaTime);
+          }
+
+          if (
+            captured >= config.frameCount ||
+            mediaTime >= config.usedSeconds
+          ) {
+            finish();
+            return;
+          }
+
+          callbackId = video.requestVideoFrameCallback(onFrame);
+        };
+
+        callbackId = video.requestVideoFrameCallback(onFrame);
+      } else {
+        const onAnimationFrame = () => {
+          if (finished) return;
+          const mediaTime = video.currentTime;
+
+          if (mediaTime > lastMediaTime + 0.001) {
+            lastMediaTime = mediaTime;
+            captureAt(mediaTime);
+          }
+
+          if (
+            captured >= config.frameCount ||
+            mediaTime >= config.usedSeconds ||
+            video.ended
+          ) {
+            finish();
+            return;
+          }
+
+          rafId = requestAnimationFrame(onAnimationFrame);
+        };
+
+        rafId = requestAnimationFrame(onAnimationFrame);
+      }
+
+      try {
+        await video.play();
+      } catch (error) {
+        fail(new Error(`Safari 不允許開始解碼影片：${error.message || error}`));
+      }
+    });
+  }
+
   function safeFileName(name) {
     return (name || "video mp4")
       .replace(/[\\/:*?"<>|]/g, "_")
@@ -331,17 +502,18 @@ end`;
 
     isConverting = true;
     convertButton.disabled = true;
+    $("previewTime").disabled = true;
     status.className = "";
     $("bar").style.width = "0%";
 
     try {
-      const s = settings();
-      work.width = s.width;
-      work.height = s.height;
+      const config = settings();
+      work.width = config.width;
+      work.height = config.height;
       const context = work.getContext("2d", { willReadFrequently: true });
 
       status.textContent = "正在讀取存檔模板…";
-      const templateBuffer = await fetchTemplate(s.url);
+      const templateBuffer = await fetchTemplate(config.url);
       const zip = await JSZip.loadAsync(templateBuffer);
 
       const dataFile = zip.file("Data");
@@ -356,42 +528,25 @@ end`;
 
       const paletteText = extractPalette(luaSlot.lua);
       const palette = [...paletteText];
+
       if (palette.length < 4096) {
         throw new Error(`調色盤只有 ${palette.length} 色，應為 4096 色`);
       }
 
-      const frameChunks = new Array(s.frameCount);
+      status.textContent =
+        "正在啟動 Safari 連續解碼模式…\n請保持這個分頁在前景。";
 
-      for (let frame = 0; frame < s.frameCount; frame++) {
-        await seekTo(frame / s.fps);
-        drawVideoFrame(context, s.width, s.height, s.fit);
-
-        const rgba = context.getImageData(0, 0, s.width, s.height).data;
-        const chars = new Array(s.pixelCount);
-
-        for (let source = 0, pixel = 0; source < rgba.length; source += 4, pixel++) {
-          chars[pixel] = palette[
-            rgbToPaletteIndex(rgba[source], rgba[source + 1], rgba[source + 2])
-          ];
-        }
-
-        frameChunks[frame] = chars.join("");
-
-        if (frame % 2 === 0 || frame === s.frameCount - 1) {
-          const percent = ((frame + 1) / s.frameCount) * 84;
-          $("bar").style.width = `${percent.toFixed(1)}%`;
-          status.textContent =
-            `正在轉換影格 ${frame + 1} / ${s.frameCount}\n` +
-            `時間 ${formatTime(frame / s.fps)} / ${formatTime(s.usedSeconds)}`;
-          await sleep();
-        }
-      }
+      const frameChunks = await captureFramesContinuously(
+        context,
+        config,
+        palette
+      );
 
       const encodedVideo = frameChunks.join("");
       luaSlot.object[luaSlot.key] = buildLua(
         paletteText,
         encodedVideo,
-        s.pixelCount
+        config.pixelCount
       );
 
       const metadata = JSON.parse(await metadataFile.async("string"));
@@ -432,11 +587,12 @@ end`;
       $("bar").style.width = "100%";
       status.textContent =
         `完成：${saveName}.melsave\n` +
-        `解析度 ${s.width}×${s.height}｜${s.frameCount} 幀｜` +
+        `解析度 ${config.width}×${config.height}｜${config.frameCount} 幀｜` +
         `${encodedVideo.length.toLocaleString()} 個影片資料字元`;
     } finally {
       isConverting = false;
       convertButton.disabled = !duration;
+      $("previewTime").disabled = !duration;
     }
   }
 
@@ -454,17 +610,21 @@ end`;
     }
   });
 
-  $("previewTime").addEventListener("input", async (event) => {
+  $("previewTime").addEventListener("change", async (event) => {
     if (!duration || isConverting) return;
 
     try {
       const target = Number(event.target.value);
-      await seekTo(target);
-      renderPreview();
+      await seekPreview(target);
       updateStats();
     } catch (error) {
       console.error(error);
     }
+  });
+
+  $("previewTime").addEventListener("input", (event) => {
+    $("timeText").textContent =
+      `${formatTime(Number(event.target.value))} / ${formatTime(duration)}`;
   });
 
   $("template").addEventListener("change", () => {
@@ -487,6 +647,7 @@ end`;
       status.className = "error";
       status.textContent = `生成失敗：${error.message || error}`;
       convertButton.disabled = !duration;
+      $("previewTime").disabled = !duration;
       isConverting = false;
     }
   });

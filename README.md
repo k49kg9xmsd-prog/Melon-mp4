@@ -44,3 +44,13 @@ templates/
 - 64×36 的效能負擔比 48×27 高很多。
 - 請從 GitHub Pages 網址開啟，不要直接在 iOS「檔案」App 中開啟 `index.html`。
 - `vendor/jszip.min.js` 已放在專案內，不依賴 CDN。
+
+
+## 2.0 更新
+
+- 轉換時不再對每一幀執行 `video.currentTime` seek。
+- 改用 `requestVideoFrameCallback` 連續播放擷取。
+- Safari 不支援該 API 時，會自動改用 `requestAnimationFrame`。
+- 只在轉換開始時跳回影片開頭一次。
+- 修正 iPad Safari 的「等待 seeked 逾時」問題。
+- 轉換過程請保持 Safari 分頁在前景。
