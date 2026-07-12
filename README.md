@@ -14,7 +14,7 @@
 
 網址通常會是：
 
-`https://你的帳號.github.io/儲存庫名稱/`
+`https://k49kg9xmsd-prog.github.io/Melon-mp4/`
 
 ## 專案結構
 
