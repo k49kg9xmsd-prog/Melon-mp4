@@ -27,6 +27,11 @@
   let videoUrl = null;
   let duration = 0;
   let isConverting = false;
+  let selectedFile = null;
+  let mediaKind = "video";
+  let gifDecoder = null;
+  let gifFrameCount = 0;
+  let gifFirstFrame = null;
 
   function sleep(ms = 0) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -116,16 +121,15 @@
       `${formatTime(Number($("previewTime").value))} / ${formatTime(duration)}`;
   }
 
-  function drawVideoFrame(context, width, height, fitMode) {
+
+  function drawSourceFrame(context, source, sourceWidth, sourceHeight, width, height, fitMode) {
     context.fillStyle = "#000";
     context.fillRect(0, 0, width, height);
 
-    const sourceWidth = video.videoWidth;
-    const sourceHeight = video.videoHeight;
     if (!sourceWidth || !sourceHeight) return;
 
     if (fitMode === "stretch") {
-      context.drawImage(video, 0, 0, width, height);
+      context.drawImage(source, 0, 0, width, height);
       return;
     }
 
@@ -137,7 +141,7 @@
     const drawHeight = sourceHeight * scale;
 
     context.drawImage(
-      video,
+      source,
       (width - drawWidth) / 2,
       (height - drawHeight) / 2,
       drawWidth,
@@ -145,10 +149,38 @@
     );
   }
 
+  function drawVideoFrame(context, width, height, fitMode) {
+    drawSourceFrame(
+      context,
+      video,
+      video.videoWidth,
+      video.videoHeight,
+      width,
+      height,
+      fitMode
+    );
+  }
+
   function renderPreview() {
-    if (!duration || video.readyState < 2) return;
+    if (!duration) return;
     const context = preview.getContext("2d");
-    drawVideoFrame(context, preview.width, preview.height, $("fit").value);
+
+    if (mediaKind === "gif") {
+      if (!gifFirstFrame) return;
+      drawSourceFrame(
+        context,
+        gifFirstFrame,
+        gifFirstFrame.displayWidth,
+        gifFirstFrame.displayHeight,
+        preview.width,
+        preview.height,
+        $("fit").value
+      );
+    } else {
+      if (video.readyState < 2) return;
+      drawVideoFrame(context, preview.width, preview.height, $("fit").value);
+    }
+
     $("previewEmpty").hidden = true;
   }
 
@@ -174,6 +206,63 @@
     }
 
     renderPreview();
+  }
+
+
+  async function loadGif(file) {
+    if (!("ImageDecoder" in window)) {
+      throw new Error("這個瀏覽器不支援 GIF 逐幀解碼，請更新瀏覽器後再試");
+    }
+
+    if (gifFirstFrame) {
+      gifFirstFrame.close();
+      gifFirstFrame = null;
+    }
+    if (gifDecoder) {
+      gifDecoder.close();
+      gifDecoder = null;
+    }
+
+    status.className = "";
+    status.textContent = "正在讀取 GIF…";
+    convertButton.disabled = true;
+    $("previewTime").disabled = true;
+    $("previewEmpty").hidden = false;
+
+    const bytes = await file.arrayBuffer();
+    gifDecoder = new ImageDecoder({
+      data: bytes,
+      type: file.type || "image/gif"
+    });
+
+    await gifDecoder.tracks.ready;
+    const track = gifDecoder.tracks.selectedTrack;
+    gifFrameCount = track.frameCount;
+
+    const first = await gifDecoder.decode({ frameIndex: 0 });
+    gifFirstFrame = first.image;
+
+    let totalMicroseconds = 0;
+    for (let i = 0; i < gifFrameCount; i++) {
+      const decoded = i === 0 ? first : await gifDecoder.decode({ frameIndex: i });
+      totalMicroseconds += decoded.image.duration || 100000;
+      if (i !== 0) decoded.image.close();
+    }
+
+    duration = Math.max(0.1, totalMicroseconds / 1000000);
+    $("previewTime").value = "0";
+    $("previewTime").disabled = true;
+    $("saveName").value = limitText(
+      `${file.name.replace(/\.[^.]+$/, "") || "gif"} gif`,
+      MAX_SAVE_NAME_LENGTH
+    );
+
+    updateNameState();
+    updateStats();
+    renderPreview();
+
+    convertButton.disabled = false;
+    status.textContent = `GIF 已載入，共 ${gifFrameCount} 幀。`;
   }
 
   async function loadVideo(file) {
@@ -479,6 +568,108 @@ end`;
     });
   }
 
+
+  async function captureGifFrames(context, config, palette) {
+    const output = new Array(config.frameCount);
+    const decodedFrames = [];
+    const frameEnds = [];
+    let elapsed = 0;
+
+    for (let i = 0; i < gifFrameCount; i++) {
+      const decoded = await gifDecoder.decode({ frameIndex: i });
+      const frame = decoded.image;
+      elapsed += (frame.duration || 100000) / 1000000;
+      decodedFrames.push(frame);
+      frameEnds.push(elapsed);
+
+      if (i % 4 === 0) {
+        status.textContent = `正在解碼 GIF ${i + 1} / ${gifFrameCount}`;
+        await sleep();
+      }
+    }
+
+    for (let outIndex = 0; outIndex < config.frameCount; outIndex++) {
+      const time = outIndex / config.fps;
+      let sourceIndex = frameEnds.findIndex((end) => time < end);
+      if (sourceIndex < 0) sourceIndex = decodedFrames.length - 1;
+
+      const frame = decodedFrames[sourceIndex];
+      drawSourceFrame(
+        context,
+        frame,
+        frame.displayWidth,
+        frame.displayHeight,
+        config.width,
+        config.height,
+        config.fit
+      );
+
+      const rgba = context.getImageData(
+        0, 0, config.width, config.height
+      ).data;
+      const chars = new Array(config.pixelCount);
+
+      for (let source = 0, pixel = 0; source < rgba.length; source += 4, pixel++) {
+        chars[pixel] = palette[
+          rgbToPaletteIndex(rgba[source], rgba[source + 1], rgba[source + 2])
+        ];
+      }
+
+      output[outIndex] = chars.join("");
+      $("bar").style.width = `${((outIndex + 1) / config.frameCount * 84).toFixed(1)}%`;
+      status.textContent =
+        `正在轉換 GIF ${outIndex + 1} / ${config.frameCount}`;
+
+      if (outIndex % 3 === 0) await sleep();
+    }
+
+    decodedFrames.forEach((frame) => frame.close());
+    return output;
+  }
+
+  async function canvasToPngBytes(canvas) {
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (result) => result ? resolve(result) : reject(new Error("無法建立存檔圖示")),
+        "image/png"
+      );
+    });
+    return new Uint8Array(await blob.arrayBuffer());
+  }
+
+  async function createIconBytes(config) {
+    const iconCanvas = document.createElement("canvas");
+    iconCanvas.width = 64;
+    iconCanvas.height = 64;
+    const iconContext = iconCanvas.getContext("2d");
+
+    if (mediaKind === "gif") {
+      drawSourceFrame(
+        iconContext,
+        gifFirstFrame,
+        gifFirstFrame.displayWidth,
+        gifFirstFrame.displayHeight,
+        64,
+        64,
+        "cover"
+      );
+    } else {
+      video.pause();
+      await seekPreview(0);
+      drawSourceFrame(
+        iconContext,
+        video,
+        video.videoWidth,
+        video.videoHeight,
+        64,
+        64,
+        "cover"
+      );
+    }
+
+    return canvasToPngBytes(iconCanvas);
+  }
+
   function textLength(text) {
     return [...text].length;
   }
@@ -573,11 +764,11 @@ end`;
       status.textContent =
         "正在準備影片解碼…\n轉換期間請保持這個分頁開啟。";
 
-      const frameChunks = await captureFramesContinuously(
-        context,
-        config,
-        palette
-      );
+      const iconBytes = await createIconBytes(config);
+
+      const frameChunks = mediaKind === "gif"
+        ? await captureGifFrames(context, config, palette)
+        : await captureFramesContinuously(context, config, palette);
 
       const encodedVideo = frameChunks.join("");
       luaSlot.object[luaSlot.key] = buildLua(
@@ -596,6 +787,7 @@ end`;
 
       zip.file("Data", JSON.stringify(dataObject));
       zip.file("MetaData", JSON.stringify(metadata));
+      zip.file("Icon", iconBytes);
 
       $("bar").style.width = "87%";
       status.textContent = "正在壓縮並封裝 .melsave…";
@@ -661,8 +853,18 @@ end`;
     const file = fileInput.files?.[0];
     if (!file) return;
 
+    selectedFile = file;
+    mediaKind = (
+      file.type === "image/gif" ||
+      file.name.toLowerCase().endsWith(".gif")
+    ) ? "gif" : "video";
+
     try {
-      await loadVideo(file);
+      if (mediaKind === "gif") {
+        await loadGif(file);
+      } else {
+        await loadVideo(file);
+      }
     } catch (error) {
       console.error(error);
       status.className = "error";
@@ -672,7 +874,7 @@ end`;
   });
 
   $("previewTime").addEventListener("change", async (event) => {
-    if (!duration || isConverting) return;
+    if (!duration || isConverting || mediaKind === "gif") return;
 
     try {
       const target = Number(event.target.value);
@@ -725,6 +927,8 @@ end`;
 
   window.addEventListener("beforeunload", () => {
     if (videoUrl) URL.revokeObjectURL(videoUrl);
+    if (gifFirstFrame) gifFirstFrame.close();
+    if (gifDecoder) gifDecoder.close();
   });
 
   updateNameState();
