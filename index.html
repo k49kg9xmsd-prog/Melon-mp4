@@ -54,8 +54,12 @@
       </div>
 
       <div class="full">
-        <label for="saveName">存檔名稱</label>
-        <input id="saveName" type="text" maxlength="50" value="video mp4">
+        <div class="label-row">
+          <label for="saveName">存檔名稱</label>
+          <span id="nameCount">9 / 20</span>
+        </div>
+        <input id="saveName" type="text" maxlength="20" value="video mp4" autocomplete="off">
+        <small>最多 20 個字元。下載的是 ZIP，解壓縮後就是 .melsave。</small>
       </div>
     </section>
 
@@ -79,7 +83,7 @@
     </section>
 
     <section class="card">
-      <button id="convert" type="button" disabled>生成 .melsave</button>
+      <button id="convert" type="button" disabled>生成存檔 ZIP</button>
       <div class="progress"><div id="bar"></div></div>
       <pre id="status">請先選擇影片。</pre>
     </section>
@@ -87,7 +91,7 @@
     <section class="card notes">
       <h2>使用說明</h2>
       <p>建議先用 48×27、15 FPS、10～15 秒測試。64×36 畫面較清楚，但存檔更大，遊戲負擔也較高。</p>
-      <p>可在手機、平板與電腦的現代瀏覽器使用。實際可讀取的影片格式取決於瀏覽器支援。</p>
+      <p>完成後會下載一個 ZIP，裡面只有一個 .melsave。解壓縮後直接匯入遊戲。</p>
     </section>
   </main>
 

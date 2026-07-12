@@ -189,3 +189,36 @@ button:disabled {
   .stats { grid-template-columns: repeat(2, 1fr); }
   .card { padding: 16px; border-radius: 17px; }
 }
+
+
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.label-row label {
+  margin-bottom: 8px;
+}
+
+#nameCount {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+#nameCount.warning {
+  color: var(--danger);
+}
+
+small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+input.invalid {
+  border-color: var(--danger);
+}
