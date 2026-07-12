@@ -11,7 +11,7 @@
   <main>
     <header class="hero">
       <h1>MEL 影片轉換器</h1>
-      <p>選擇影片或 GIF、設定解析度與 FPS，完成後直接下載 <code>.melsave</code>。所有處理都在目前裝置上進行。</p>
+      <p>選擇影片或 GIF，設定解析度與 FPS，完成後下載存檔。影片有多長就會完整轉換，所有處理都在目前裝置上進行。</p>
     </header>
 
     <section class="card form-grid">
@@ -46,11 +46,6 @@
           <option value="cover">裁切填滿</option>
           <option value="stretch">拉伸填滿</option>
         </select>
-      </div>
-
-      <div>
-        <label for="maxSeconds">最長轉換秒數</label>
-        <input id="maxSeconds" type="number" min="1" max="120" step="1" value="15">
       </div>
 
       <div class="full">
@@ -90,9 +85,24 @@
 
     <section class="card notes">
       <h2>使用說明</h2>
-      <p>建議先用 48×27、15 FPS、10～15 秒測試。64×36 畫面較清楚，但存檔更大，遊戲負擔也較高。</p>
+      <p>建議先用 48×27、15 FPS 測試。64×36 畫面較清楚，但存檔更大，遊戲負擔也較高。影片越長，轉換時間與存檔容量也會增加。</p>
       <p>完成後會下載一個 ZIP，裡面只有一個 .melsave。解壓縮後直接匯入遊戲。</p>
     </section>
+
+    <section class="card creator-credit">
+      <div class="creator-copy">
+        <span class="eyebrow">原始存檔作者</span>
+        <h2>紫晶石灰</h2>
+        <p>原始 MP4 播放存檔由紫晶石灰製作。本網站僅修改存檔內容，讓玩家能替換成自己的影片或 GIF。</p>
+        <a class="creator-link" href="https://b23.tv/6U5cNLR" target="_blank" rel="noopener noreferrer">
+          前往紫晶石灰的哔哩哔哩個人空間
+        </a>
+      </div>
+      <a class="creator-image-link" href="https://b23.tv/6U5cNLR" target="_blank" rel="noopener noreferrer" aria-label="紫晶石灰的哔哩哔哩個人空間">
+        <img src="./assets/zijingshihui.png" alt="紫晶石灰哔哩哔哩個人空間">
+      </a>
+    </section>
+
   </main>
 
   <video id="video" muted playsinline preload="auto"></video>

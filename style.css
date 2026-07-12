@@ -222,3 +222,64 @@ small {
 input.invalid {
   border-color: var(--danger);
 }
+
+
+.creator-credit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 360px);
+  gap: 24px;
+  align-items: center;
+}
+
+.creator-credit h2 {
+  margin: 5px 0 10px;
+  font-size: 28px;
+}
+
+.creator-credit p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.creator-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  text-decoration: none;
+  background: var(--panel-2);
+}
+
+.creator-link:hover {
+  border-color: var(--accent);
+}
+
+.creator-image-link {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.creator-image-link img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 720px) {
+  .creator-credit {
+    grid-template-columns: 1fr;
+  }
+}

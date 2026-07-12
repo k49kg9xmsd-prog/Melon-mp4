@@ -85,14 +85,12 @@
   function settings() {
     const template = selectedTemplate();
     const fps = Number($("fps").value);
-    const maxSeconds = Math.max(1, Math.min(120, Number($("maxSeconds").value) || 15));
-    const usedSeconds = Math.min(duration || 0, maxSeconds);
-    const frameCount = Math.max(1, Math.floor(usedSeconds * fps));
+    const usedSeconds = duration || 0;
+    const frameCount = Math.max(1, Math.ceil(usedSeconds * fps));
 
     return {
       ...template,
       fps,
-      maxSeconds,
       usedSeconds,
       frameCount,
       pixelCount: template.width * template.height,
@@ -762,7 +760,7 @@ end`;
       }
 
       status.textContent =
-        "正在準備影片解碼…\n轉換期間請保持這個分頁開啟。";
+        "正在準備影片解碼…\n轉換期間請保持這個分頁開啟，長影片需要較多時間。";
 
       const iconBytes = await createIconBytes(config);
 
@@ -895,10 +893,8 @@ end`;
     renderPreview();
   });
 
-  ["fps", "maxSeconds"].forEach((id) => {
-    $(id).addEventListener("change", updateStats);
-    $(id).addEventListener("input", updateStats);
-  });
+  $("fps").addEventListener("change", updateStats);
+  $("fps").addEventListener("input", updateStats);
 
   $("fit").addEventListener("change", renderPreview);
 
