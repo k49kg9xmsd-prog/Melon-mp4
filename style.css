@@ -283,3 +283,47 @@ input.invalid {
     grid-template-columns: 1fr;
   }
 }
+
+
+.hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.hero-top h1 {
+  margin: 8px 0;
+}
+
+.language-box {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-top: 10px;
+}
+
+.language-box label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.language-box select {
+  width: auto;
+  min-width: 132px;
+}
+
+@media (max-width: 600px) {
+  .hero-top {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .language-box {
+    width: 100%;
+    justify-content: flex-end;
+    padding-top: 0;
+  }
+}
