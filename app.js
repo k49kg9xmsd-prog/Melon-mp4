@@ -166,7 +166,7 @@
       video.currentTime = target;
       await promise;
     } catch (_) {
-      // Safari 偶爾漏掉 seeked；預覽時允許退化成短暫等待。
+      // 部分瀏覽器偶爾不觸發 seeked；預覽時改用短暫等待。
       video.currentTime = target;
       await sleep(300);
     }
@@ -300,7 +300,10 @@ end`;
     const r = Math.round((red / 255) * 15);
     const g = Math.round((green / 255) * 15);
     const b = Math.round((blue / 255) * 15);
-    return r + b * 16 + g * 256;
+
+    // Lua 端輸出為 {x=r, y=b, z=g}，LED 將 x/y/z 視為 R/G/B。
+    // 因此來源綠色要放在中間 4 bits，來源藍色放在高 4 bits。
+    return r + g * 16 + b * 256;
   }
 
   function encodeCurrentFrame(context, config, palette) {
@@ -407,7 +410,7 @@ end`;
       };
 
       watchdog = setTimeout(() => {
-        fail(new Error("影片連續解碼逾時，請保持 Safari 在前景並關閉省電模式"));
+        fail(new Error("影片解碼逾時，請保持分頁開啟後再試一次"));
       }, Math.max(30000, config.usedSeconds * 5000));
 
       const onEnded = () => finish();
@@ -466,7 +469,7 @@ end`;
       try {
         await video.play();
       } catch (error) {
-        fail(new Error(`Safari 不允許開始解碼影片：${error.message || error}`));
+        fail(new Error(`瀏覽器無法開始解碼影片：${error.message || error}`));
       }
     });
   }
@@ -534,7 +537,7 @@ end`;
       }
 
       status.textContent =
-        "正在啟動 Safari 連續解碼模式…\n請保持這個分頁在前景。";
+        "正在準備影片解碼…\n轉換期間請保持這個分頁開啟。";
 
       const frameChunks = await captureFramesContinuously(
         context,
