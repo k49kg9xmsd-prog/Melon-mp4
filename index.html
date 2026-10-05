@@ -1,60 +1,7 @@
-<!doctype html>
-<html lang="zh-Hant">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>甜瓜影片轉換器</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<main>
-<header>
-  <img src="assets/icon.png" class="logo" onerror="this.style.display='none'">
-  <div><h1>甜瓜影片轉換器</h1><p>影片播放器 2.0 網頁轉換工具</p></div>
-</header>
-
-<section class="panel">
- <label class="picker" for="videoFile">
-   <b id="fileTitle">選擇影片</b>
-   <span id="fileDesc">MP4 / MOV / WebM</span>
- </label>
- <input id="videoFile" type="file" accept="video/*">
- <video id="video" muted playsinline></video>
- <canvas id="canvas" width="392" height="180"></canvas>
- <img id="preview">
-
- <div class="setting">
-   <label>檔案名稱</label>
-   <input id="saveName" class="nameInput" type="text" value="gb" maxlength="40" placeholder="例如：badapple">
- </div>
- <div class="setting">
-   <label>畫質</label>
-   <input id="quality" type="range" min="35" max="95" value="72">
-   <output id="qualityValue">72%</output>
- </div>
-
- <div class="chips"><span>168 幀</span><span>392 × 180</span><span>JPEG</span></div>
- <button id="convert" disabled>開始轉換</button>
- <div class="progress"><i id="bar"></i></div>
- <p id="status">正在載入原版模板…</p>
-</section>
-
-<section class="panel" id="result" hidden>
- <h2>完成</h2>
- <p>兩個存檔都下載並匯入 Melon Playground。</p>
- <button class="sub" id="downloadVideo">下載 gb.melsave</button>
- <button class="sub" id="downloadPlayer">下載 gb mp4.melsave</button>
-</section>
-
-<section class="panel original">
- <div class="originalTop">
-   <img src="assets/icon2.png" onerror="this.style.display='none'">
-   <div><h2>原作者播放器</h2><p>保留原版播放器 Lua、存檔結構、播放方式與資源。</p></div>
- </div>
- <p>網頁只會替換 <code>gb.melsave</code> 中的 1～168 張影片影格；<code>gb mp4.melsave</code> 直接使用原作者檔案。</p>
-</section>
-</main>
-<script src="vendor/jszip.min.js"></script>
-<script src="app.js"></script>
-</body>
-</html>
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>甜瓜影片播放器 2.0 轉換器</title><link rel="stylesheet" href="style.css"></head><body><main>
+<header><img src="assets/icon.png"><div><h1>甜瓜影片轉換器</h1><p>影片播放器 2.0｜原版結構轉換</p></div></header>
+<section class="card"><label class="pick" for="videoFile"><b id="fileName">選擇影片</b><span id="fileInfo">MP4 / MOV / WebM</span></label><input id="videoFile" type="file" accept="video/*"><video id="video" muted playsinline></video><canvas id="canvas" width="392" height="180"></canvas><img id="preview">
+<div class="row"><label>存檔名稱</label><input id="saveName" class="text" value="myvideo" maxlength="32"></div><div class="row"><label>JPEG 畫質</label><input id="quality" type="range" min="45" max="95" value="80"><output id="qv">80%</output></div><div class="tags"><span>168 幀</span><span>392×180</span><span>原版 gb 模板</span></div><button id="convert" disabled>開始轉換</button><div class="progress"><i id="bar"></i></div><pre id="status">載入原版模板中…</pre></section>
+<section class="card" id="done" hidden><h2>完成</h2><p>下載的是 ZIP。解壓縮後裡面有兩個已正確命名的 .melsave。</p><button id="download">下載轉換結果 ZIP</button></section>
+<section class="card info"><h2>這版修正</h2><p>不重建物件、不改 12×14 結構，只替換原版 gb.melsave 的 AssetId 1～168。播放器則只修改 <code>spawn.createSave("gb",3,3)</code> 的名稱。輸出前會重新解包自我驗證。</p></section>
+</main><script src="vendor/jszip.min.js"></script><script src="app.js"></script></body></html>

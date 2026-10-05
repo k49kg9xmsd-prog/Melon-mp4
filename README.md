@@ -1,35 +1,14 @@
-# 甜瓜影片轉換器
+# 甜瓜影片播放器 2.0 轉換器 v3
 
-GitHub Pages 前端版「影片播放器 2.0」轉換工具。
+這版只使用「视频-放器2.0.zip」內的原版 `gb.melsave` 與 `gb mp4.melsave`。
 
-## 專案內容
+已確認原版 `gb.melsave` 結構：12 個根物件，每個根物件有 14 個帶 Human texture 的子物件，AssetId 連續為 1～168。
 
-- `templates/gb.melsave`：原版影片幀存檔模板，網站實際讀取並替換其中 1～168 張圖片。
-- `templates/gb mp4.melsave`：原作者播放器，網站原樣提供下載。
-- `assets/icon.png`、`assets/icon2.png`：原作相關圖片資源。
-- `index.html` / `style.css` / `app.js`：網站本體。
+轉換器不新增/刪除任何影片物件，只替換 ZIP 中的 1～168 JPEG。播放器只修改 Lua 的 `spawn.createSave("gb",3,3)` 名稱。
 
-## 使用
+為避免 iOS Safari 對 Blob 下載檔名處理不一致，最終下載為普通 ZIP；解壓後會得到：
+- `<名稱>.melsave`
+- `<名稱> mp4.melsave`
+- `驗證結果.txt`
 
-上傳影片 → 轉換 → 同時下載 `gb.melsave` 與 `gb mp4.melsave` → 匯入 Melon Playground。
-
-目前固定依原作格式輸出 168 幀、392×180 JPEG。
-
-## 原作說明
-
-播放器 Lua、物件結構、播放方式與相關資源來自「影片播放器 2.0」原檔作者。
-本 Repository 的網頁部分是依該格式製作的轉換工具，並非宣稱播放器本體為本工具作者原創。
-
-## GitHub Pages
-
-把本 ZIP **裡面的檔案**直接放在 Repository 根目錄，然後：
-
-Settings → Pages → Deploy from a branch → main → /(root)
-
-
-## v2 修正
-
-- 改用專案內的 `vendor/jszip.min.js` 直接載入原版 `.melsave`，不再自行重建 ZIP 結構。
-- `gb.melsave` 只替換原作的 `1`～`168` 圖片資源，其餘內容保留。
-- 可自訂存檔名稱。
-- 自訂名稱時會同步修改播放器 Lua 的 `spawn.createSave("gb")`，因此影片存檔與播放器不再被鎖死為 `gb`。
+網站輸出前會重新解包兩個 melsave 並檢查 12/168 結構、AssetId 1～168 與播放器名稱綁定。
