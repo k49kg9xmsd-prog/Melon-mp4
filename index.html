@@ -24,6 +24,10 @@
  <img id="preview">
 
  <div class="setting">
+   <label>檔案名稱</label>
+   <input id="saveName" class="nameInput" type="text" value="gb" maxlength="40" placeholder="例如：badapple">
+ </div>
+ <div class="setting">
    <label>畫質</label>
    <input id="quality" type="range" min="35" max="95" value="72">
    <output id="qualityValue">72%</output>
@@ -50,6 +54,7 @@
  <p>網頁只會替換 <code>gb.melsave</code> 中的 1～168 張影片影格；<code>gb mp4.melsave</code> 直接使用原作者檔案。</p>
 </section>
 </main>
+<script src="vendor/jszip.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

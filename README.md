@@ -25,3 +25,11 @@ GitHub Pages 前端版「影片播放器 2.0」轉換工具。
 把本 ZIP **裡面的檔案**直接放在 Repository 根目錄，然後：
 
 Settings → Pages → Deploy from a branch → main → /(root)
+
+
+## v2 修正
+
+- 改用專案內的 `vendor/jszip.min.js` 直接載入原版 `.melsave`，不再自行重建 ZIP 結構。
+- `gb.melsave` 只替換原作的 `1`～`168` 圖片資源，其餘內容保留。
+- 可自訂存檔名稱。
+- 自訂名稱時會同步修改播放器 Lua 的 `spawn.createSave("gb")`，因此影片存檔與播放器不再被鎖死為 `gb`。
