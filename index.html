@@ -4,7 +4,7 @@
 
 </style></head>
 <body><main>
-<header><a class="brand" href="./"><span class="brand-mark">▶</span> 甜瓜影片轉換器</a><span class="version">V2 · 分段播放</span></header>
+<header><a class="brand" href="./"><span class="brand-mark">▶</span> 甜瓜影片轉換器</a><span class="version">V3 · 分類打包</span></header>
 <div class="workspace">
 <section class="media-panel" aria-label="匯入與預覽">
 <div class="panel-top"><span>01 · 素材</span><span id="fileKind">影片 / GIF</span></div>
@@ -21,12 +21,12 @@
 <div class="two-col"><div><label for="fps">每秒幀數</label><select id="fps"><option value="10">10 FPS · 小檔案</option><option value="20" selected>20 FPS · 建議</option><option value="30">30 FPS · 較流暢</option><option value="60">60 FPS · 大檔案</option></select></div><div><label for="resolution">畫面大小</label><select id="resolution"><option value="292" selected>292 × 135 · 原版</option><option value="584">584 × 270 · 清晰</option><option value="876">876 × 405 · 高畫質</option></select></div></div>
 <div class="two-col"><div><label for="start">開始秒數</label><input id="start" type="number" value="0" min="0" step="0.1" required></div><div><label for="length">轉換長度（秒）</label><input id="length" type="number" min="0.1" step="0.1" placeholder="留空轉換到結尾"></div></div>
 <div class="two-col"><div><label for="quality">JPEG 品質</label><select id="quality"><option value="0.65">65% · 較小</option><option value="0.85" selected>85% · 建議</option><option value="0.95">95% · 精細</option></select></div><div><label for="fit">畫面比例</label><select id="fit"><option value="contain" selected>保留比例，補黑邊</option><option value="stretch">填滿原版畫面</option></select></div></div>
-<label for="segmentSize">每段畫面數</label><select id="segmentSize"><option value="56">56 幀 · 較省記憶體</option><option value="112" selected>112 幀 · 建議先測</option><option value="168">168 幀 · 減少換段</option></select><p class="field-note">播完會刪除舊段，再載入下一段。換段時會短暫停頓。</p><div class="output-list"><div><span>ZIP 內容</span><span id="outputSummary">片段 ＋ 播放器 ＋ 說明</span></div><code id="outputNames">名稱.melsave<br>名稱_播放器.melsave</code></div>
+<label for="segmentSize">每段畫面數</label><select id="segmentSize"><option value="56">56 幀 · 較省記憶體</option><option value="112" selected>112 幀 · 建議先測</option><option value="168">168 幀 · 減少換段</option></select><p class="field-note">播完會刪除舊段，再載入下一段。換段時會短暫停頓。</p><div class="output-list"><div><span>ZIP 內容</span><span id="outputSummary">2 個資料夾 ＋ 說明</span></div><code id="outputNames">影片內容/名稱.melsave<br>播放器/名稱_播放器.melsave</code></div>
 <button id="convert" type="submit" disabled>轉換成 ZIP</button><button id="cancel" type="button" class="secondary" hidden>取消轉換</button>
 <div class="progress-area" id="progressArea" hidden><div class="progress-label"><span id="status">準備中</span><span id="percent">0%</span></div><progress id="progress" max="100" value="0"></progress></div>
 <p id="message" role="status" aria-live="polite"></p><a id="download" class="download" hidden>下載 ZIP</a>
 </form></section></div>
-<details class="instructions"><summary>下載後怎麼放進甜瓜？</summary><ol><li>解壓縮 ZIP，將所有 <code>.melsave</code> 片段及播放器都匯入遊戲存檔資料夾。</li><li>保留輸出的檔名與存檔名稱。遊戲內只生成「名稱_播放器」。</li><li>開啟模擬後播放；畫面存檔供播放器讀取，不用手動生成。</li></ol><p>沿用提供的 38.0 存檔結構。總幀數不設上限，但每段最多 168 幀，預設 112 幀；播放時只保留一段的物件。換段會短暫停頓。若仍閃退，先改用每段 56 幀、原版解析度與 10 FPS。實際播放仍受裝置效能與遊戲版本影響。這個格式只轉換畫面，不包含聲音。</p></details>
+<details class="instructions"><summary>下載後怎麼放進甜瓜？</summary><ol><li>解壓縮 ZIP，開啟「影片內容」與「播放器」資料夾，將裡面的所有 <code>.melsave</code> 檔案匯入遊戲存檔資料夾。</li><li>保留輸出的檔名與存檔名稱。遊戲內只生成「名稱_播放器」。</li><li>開啟模擬後播放；畫面存檔供播放器讀取，不用手動生成。</li></ol><p>沿用提供的 38.0 存檔結構。總幀數不設上限，但每段最多 168 幀，預設 112 幀；播放時只保留一段的物件。換段會短暫停頓。若仍閃退，先改用每段 56 幀、原版解析度與 10 FPS。實際播放仍受裝置效能與遊戲版本影響。這個格式只轉換畫面，不包含聲音。</p></details>
 <footer><span>影片 → 畫面存檔 ＋ Lua 播放器</span><span>所有依賴已內建</span></footer>
 </main><script>
 /*!
@@ -228,7 +228,7 @@ end`;
  }
  return d;
 }
-function readme(name,count,fps,parts){return `甜瓜影片分段測試包 v2\n\n名稱：${name}\n畫面：${count} 幀\n速度：${fps} FPS\n影片內容：約 ${(count/fps).toFixed(2)} 秒（不包含換段等待）\n片段：${parts.length} 段\n\n1. 解壓縮 ZIP。\n2. 將所有 .melsave 都匯入遊戲存檔資料夾：\n${parts.map(x=>'   '+x.name+'.melsave（'+x.count+' 幀）').join('\n')}\n   ${name}_播放器.melsave\n3. 必須保留所有檔名及遊戲內存檔名稱，播放器會按順序載入每一段。\n4. 遊戲內只生成「${name}_播放器」，啟動模擬後等待初始化。\n5. 播完一段會先分批刪除舊物件，再載入下一段，不會同時載入兩段。\n\n長影片總幀數不限制，但每個畫面存檔最多 168 幀，預設使用 112 幀。\n換段會短暫停頓，完整播放時間會比原片長。\n此改法針對一次載入大量物件的問題，並非確認了閃退的根因。\n仍需遊戲實機測試；若仍閃退，改用每段 56 幀、292×135、10 FPS 測試。\n沿用 Melon Sandbox 38.0 / versionId 8 格式，只包含畫面，不含聲音。\n`;}
+function readme(name,count,fps,parts){return `甜瓜影片分段測試包 v3\n\n名稱：${name}\n畫面：${count} 幀\n速度：${fps} FPS\n影片內容：約 ${(count/fps).toFixed(2)} 秒（不包含換段等待）\n片段：${parts.length} 段\n\n1. 解壓縮 ZIP。\n2. 開啟「影片內容」和「播放器」資料夾，將裡面的所有 .melsave 檔案匯入遊戲存檔資料夾（不要把這兩個分類資料夾直接當作存檔）：\n${parts.map(x=>'   '+x.name+'.melsave（'+x.count+' 幀）').join('\n')}\n   ${name}_播放器.melsave\n3. 必須保留所有檔名及遊戲內存檔名稱，播放器會按順序載入每一段。\n4. 遊戲內只生成「${name}_播放器」，啟動模擬後等待初始化。\n5. 播完一段會先分批刪除舊物件，再載入下一段，不會同時載入兩段。\n\n長影片總幀數不限制，但每個畫面存檔最多 168 幀，預設使用 112 幀。\n換段會短暫停頓，完整播放時間會比原片長。\n此改法針對一次載入大量物件的問題，並非確認了閃退的根因。\n仍需遊戲實機測試；若仍閃退，改用每段 56 幀、292×135、10 FPS 測試。\n沿用 Melon Sandbox 38.0 / versionId 8 格式，只包含畫面，不含聲音。\n`;}
 async function pack({name,fps,count,segmentSize=112,icon,getFrame,signal,onProgress=()=>{}}){
  name=validateName(name);if(![10,20,30,60].includes(fps))throw Error('FPS 不正確');
  const parts=partPlan(name,count,segmentSize);
@@ -239,11 +239,11 @@ async function pack({name,fps,count,segmentSize=112,icon,getFrame,signal,onProgr
   for(let i=0;i<info.count;i++){abort();const bytes=await getFrame(info.start+i);abort();frames.file(String(i+1),bytes,{compression:'STORE'});onProgress({phase:'frames',done:info.start+i+1,total:count,part:part+1,parts:parts.length});}
   frames.file('Data',JSON.stringify(frameData(info.count)),{compression:'DEFLATE'});frames.file('MetaData',JSON.stringify(metadata(t.frameMeta,info.name,0)));frames.file('Icon',icon);
   const frameBytes=await frames.generateAsync({type:'uint8array',compression:'DEFLATE',compressionOptions:{level:3}},()=>{abort();onProgress({phase:'segment',done:info.start+info.count,total:count,part:part+1,parts:parts.length});});abort();
-  zip.file(info.name+'.melsave',frameBytes,{compression:'STORE'});
+  zip.file('影片內容/'+info.name+'.melsave',frameBytes,{compression:'STORE'});
  }
  player.file('Data',JSON.stringify(playerData(name,count,fps,segmentSize)),{compression:'DEFLATE'});player.file('MetaData',JSON.stringify(metadata(t.playerMeta,name+'_播放器',1)));player.file('Icon',icon);
  const playerBytes=await player.generateAsync({type:'uint8array',compression:'DEFLATE'});abort();
- zip.file(name+'_播放器.melsave',playerBytes,{compression:'STORE'});zip.file('使用說明.txt',readme(name,count,fps,parts));
+ zip.file('播放器/'+name+'_播放器.melsave',playerBytes,{compression:'STORE'});zip.file('使用說明.txt',readme(name,count,fps,parts));
  const bytes=await zip.generateAsync({type:'uint8array',compression:'STORE'},m=>{abort();onProgress({phase:'pack',percent:m.percent});});abort();return {bytes,name,count,fps,parts:parts.length};
 }
 global.MelonConverter={validateName,frameData,playerData,partPlan,pack};
@@ -260,7 +260,7 @@ function config(){if(!source)throw Error('請先匯入影片或 GIF。');const s
  if(!Number.isFinite(start)||start<0||start>=source.duration)throw Error('開始秒數必須小於素材長度。');if(!Number.isFinite(len)||len<=0)throw Error('轉換長度必須大於 0。');
  const duration=Math.min(len,source.duration-start),count=Math.max(1,Math.ceil(duration*fps-1e-8));if(!Number.isSafeInteger(count))throw Error('素材長度無效');return {start,duration,count,fps,width:Number($('resolution').value),height:Math.round(Number($('resolution').value)*135/292),quality:Number($('quality').value),fit:$('fit').value,segmentSize:Number($('segmentSize').value),name:$('name').value};
 }
-function update(){const name=$('name').value.trim()||'名稱';try{const c=config(),parts=MelonConverter.partPlan(name,c.count,c.segmentSize);$('durationStat').textContent=c.duration.toFixed(2)+' 秒';$('frameStat').textContent=c.count.toLocaleString()+' 幀';$('groupStat').textContent=parts.length.toLocaleString();$('outputNames').textContent=parts.length===1?name+'.melsave\n'+name+'_播放器.melsave':parts[0].name+'.melsave ～ '+parts[parts.length-1].name+'.melsave\n'+name+'_播放器.melsave';$('outputSummary').textContent=parts.length+' 份片段 ＋ 播放器 ＋ 說明';}catch{$('durationStat').textContent='—';$('frameStat').textContent='—';$('groupStat').textContent='—';$('outputNames').textContent=name+'.melsave\n'+name+'_播放器.melsave';$('outputSummary').textContent='片段 ＋ 播放器 ＋ 說明';}}
+function update(){const name=$('name').value.trim()||'名稱';try{const c=config(),parts=MelonConverter.partPlan(name,c.count,c.segmentSize);$('durationStat').textContent=c.duration.toFixed(2)+' 秒';$('frameStat').textContent=c.count.toLocaleString()+' 幀';$('groupStat').textContent=parts.length.toLocaleString();$('outputNames').textContent='影片內容/'+parts[0].name+'.melsave'+(parts.length>1?' ～ '+parts[parts.length-1].name+'.melsave':'')+'\n播放器/'+name+'_播放器.melsave';$('outputSummary').textContent='2 個資料夾 ＋ 說明';}catch{$('durationStat').textContent='—';$('frameStat').textContent='—';$('groupStat').textContent='—';$('outputNames').textContent='影片內容/'+name+'.melsave\n播放器/'+name+'_播放器.melsave';$('outputSummary').textContent='2 個資料夾 ＋ 說明';}}
 function waitEvent(target,event,signal,timeout=20000){return new Promise((resolve,reject)=>{let timer;const clean=()=>{clearTimeout(timer);target.removeEventListener(event,ok);target.removeEventListener('error',error);signal?.removeEventListener('abort',abort);};const ok=()=>{clean();resolve();};const error=()=>{clean();reject(Error('瀏覽器無法解碼這支影片，請改用 H.264 MP4。'));};const abort=()=>{clean();reject(new DOMException('已取消','AbortError'));};if(signal?.aborted)return abort();target.addEventListener(event,ok,{once:true});target.addEventListener('error',error,{once:true});signal?.addEventListener('abort',abort,{once:true});timer=setTimeout(()=>{clean();reject(Error('讀取畫面逾時，請重新選擇影片。'));},timeout);});}
 async function seek(video,time,signal){if(video.readyState<2)await waitEvent(video,'loadeddata',signal);if(Math.abs(video.currentTime-time)<.00001&&!video.seeking)return;const ready=waitEvent(video,'seeked',signal);video.currentTime=time;await ready;if(video.readyState<2)await waitEvent(video,'loadeddata',signal);}
 function draw(canvas,media,w,h,fit){const ctx=canvas.getContext('2d');ctx.fillStyle='#000';ctx.fillRect(0,0,canvas.width,canvas.height);if(fit==='stretch')ctx.drawImage(media,0,0,canvas.width,canvas.height);else{const scale=Math.min(canvas.width/w,canvas.height/h),dw=w*scale,dh=h*scale;ctx.drawImage(media,(canvas.width-dw)/2,(canvas.height-dh)/2,dw,dh);}}
