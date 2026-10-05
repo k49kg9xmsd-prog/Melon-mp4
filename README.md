@@ -1,20 +1,27 @@
-# 甜瓜影片轉換器 / Melon MP4
+# 甜瓜影片轉換器
 
-把一般影片在瀏覽器內轉換成「影片播放器 2.0」可使用的 Melon Playground 存檔。
+GitHub Pages 前端版「影片播放器 2.0」轉換工具。
+
+## 專案內容
+
+- `templates/gb.melsave`：原版影片幀存檔模板，網站實際讀取並替換其中 1～168 張圖片。
+- `templates/gb mp4.melsave`：原作者播放器，網站原樣提供下載。
+- `assets/icon.png`、`assets/icon2.png`：原作相關圖片資源。
+- `index.html` / `style.css` / `app.js`：網站本體。
 
 ## 使用
-1. 開啟 GitHub Pages 網站。
-2. 選擇影片。
-3. 調整 JPEG 畫質。
-4. 按「開始轉換」。
-5. 下載 `gb.melsave` 與 `gb mp4.melsave`。
-6. 將兩個檔案匯入 Melon Playground，保留原檔名。
 
-目前依原作格式固定輸出 168 幀、392×180 JPEG。
+上傳影片 → 轉換 → 同時下載 `gb.melsave` 與 `gb mp4.melsave` → 匯入 Melon Playground。
 
-## 原作
-播放器 Lua、物件結構、播放方式及相關原始資源來自「影片播放器 2.0」原檔作者。
-本專案是依該格式製作的網頁轉換工具，不冒充播放器原作者。
+目前固定依原作格式輸出 168 幀、392×180 JPEG。
+
+## 原作說明
+
+播放器 Lua、物件結構、播放方式與相關資源來自「影片播放器 2.0」原檔作者。
+本 Repository 的網頁部分是依該格式製作的轉換工具，並非宣稱播放器本體為本工具作者原創。
 
 ## GitHub Pages
-Repository → Settings → Pages → Deploy from a branch → `main` / `(root)`。
+
+把本 ZIP **裡面的檔案**直接放在 Repository 根目錄，然後：
+
+Settings → Pages → Deploy from a branch → main → /(root)
